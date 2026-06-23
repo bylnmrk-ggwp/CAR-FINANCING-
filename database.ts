@@ -2,7 +2,9 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { LoanApplication, SimulatedEmail } from './src/types';
 
-const dbPath = path.join(process.cwd(), 'mcars-finance.db');
+const dbPath = process.env.VERCEL
+  ? path.join('/tmp', 'mcars-finance.db')
+  : path.join(process.cwd(), 'mcars-finance.db');
 const db = new Database(dbPath);
 
 // Enable foreign keys
