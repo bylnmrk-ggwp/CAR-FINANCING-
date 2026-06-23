@@ -101,7 +101,7 @@ export default function App() {
             
             <div className="text-left font-display">
               <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-1.5 leading-none">
-                PLATINUM <span className="text-red-500 font-extrabold text-xs sm:text-sm bg-red-950/40 border border-red-500/20 px-2 py-0.5 rounded font-mono">CAR FINANCE</span>
+                MCARS <span className="text-red-500 font-extrabold text-xs sm:text-sm bg-red-950/40 border border-red-500/20 px-2 py-0.5 rounded font-mono">FINANCE</span>
               </h1>
               <p className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider mt-1">Underwriter Accreditation Portal</p>
             </div>
@@ -253,20 +253,20 @@ export default function App() {
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <Landmark className="w-4 h-4 text-red-500" />
-              <span className="text-white font-bold tracking-tight uppercase">PLATINUM CAR FINANCE</span>
+              <span className="text-white font-bold tracking-tight uppercase">MCARS FINANCE</span>
             </div>
             
             <div className="flex flex-wrap justify-center gap-6 text-[10px] uppercase font-semibold tracking-wider text-neutral-400">
               <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-red-500" /> WebAuthn Encryption</span>
               <span className="flex items-center gap-1"><HeartHandshake className="w-3.5 h-3.5 text-red-500" /> Fair Lending Standard</span>
-              <span className="flex items-center gap-1"><PhoneCall className="w-3.5 h-3.5 text-red-500" /> 1-800-PLATINUM</span>
+              <span className="flex items-center gap-1"><PhoneCall className="w-3.5 h-3.5 text-red-500" /> 1-800-MCARS</span>
             </div>
           </div>
 
           <hr className="border-neutral-900" />
 
           <p className="text-[10px] text-neutral-500 leading-relaxed font-sans max-w-3xl mx-auto">
-            © 2026 Platinum Car Finance Inc. Licenses are issued by custom underwriter divisions. Pre-qualification quotes are promotional values and do not represent a final authorization binding contract. All activities log details are securely monitored by our backend server simulator.
+            © 2026 MCARS Finance Inc. Licenses are issued by custom underwriter divisions. Pre-qualification quotes are promotional values and do not represent a final authorization binding contract. All activities log details are securely monitored by our backend server simulator.
           </p>
         </div>
       </footer>

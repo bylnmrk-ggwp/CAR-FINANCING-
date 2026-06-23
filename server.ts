@@ -189,7 +189,7 @@ app.post("/api/applications", (req, res) => {
   sendSimulatedEmail(
     applicantEmail,
     `Application Received: ${carMake} ${carModel} Loan [ID: ${id}]`,
-    `Dear ${applicantName},\n\nThank you for applying for car financing with us. We have received your request for a loan on a ${carYear} ${carMake} ${carModel} for $${Number(loanAmount).toLocaleString()}.\n\nYour application ID is ${id}.\nYour initial status is: DOCUMENTS_PENDING.\nTo speed up your approval, please head over to your real-time tracking dashboard and upload your required ID and proof of income documents.\n\nWarm regards,\nPlatinum Car Finance Underwriters`
+    `Dear ${applicantName},\n\nThank you for applying for car financing with us. We have received your request for a loan on a ${carYear} ${carMake} ${carModel} for $${Number(loanAmount).toLocaleString()}.\n\nYour application ID is ${id}.\nYour initial status is: DOCUMENTS_PENDING.\nTo speed up your approval, please head over to your real-time tracking dashboard and upload your required ID and proof of income documents.\n\nWarm regards,\nMCARS Finance Underwriters`
   );
 
   res.status(201).json(newApp);
@@ -294,7 +294,7 @@ app.post("/api/applications/:id/advance", (req, res) => {
     sendSimulatedEmail(
       appItem.applicantEmail,
       `🎉 Approved! Premium Car Finance Authorized [ID: ${id}]`,
-      `Congratulations ${appItem.applicantName}!\n\nWe are overjoyed to inform you that your application for a ${appItem.carMake} ${appItem.carModel} financing with ID: ${id} has been APPROVED! \n\nLoan Terms Summary:\n- Vehicle: ${appItem.carYear} ${appItem.carMake} ${appItem.carModel}\n- Principal Loan Amount: $${appItem.loanAmount.toLocaleString()}\n- Interest rate: ${appItem.interestRate}% APR\n- Selected Term: ${appItem.termMonths} Months\n- Calculated Monthly Cost: $${appItem.monthlyPayment.toFixed(2)}\n\nNext steps: A representative will contact you to sign the digital closing package. You can schedule pick-up with your dealer today!\n\nSincerely,\nPlatinum Car Finance team`
+      `Congratulations ${appItem.applicantName}!\n\nWe are overjoyed to inform you that your application for a ${appItem.carMake} ${appItem.carModel} financing with ID: ${id} has been APPROVED! \n\nLoan Terms Summary:\n- Vehicle: ${appItem.carYear} ${appItem.carMake} ${appItem.carModel}\n- Principal Loan Amount: $${appItem.loanAmount.toLocaleString()}\n- Interest rate: ${appItem.interestRate}% APR\n- Selected Term: ${appItem.termMonths} Months\n- Calculated Monthly Cost: $${appItem.monthlyPayment.toFixed(2)}\n\nNext steps: A representative will contact you to sign the digital closing package. You can schedule pick-up with your dealer today!\n\nSincerely,\nMCARS Finance team`
     );
   } else if (nextStatus === 'REJECTED') {
     sendSimulatedEmail(
