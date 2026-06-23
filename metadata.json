@@ -1,0 +1,6 @@
+{
+  "name": "Car Financing Portal",
+  "description": "A professional car financing application allowing users to compare interest rates, configure loan plans, apply for loans, securely upload documents, simulate biometric login, track application status in real-time, and get AI-assisted loan consultations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
