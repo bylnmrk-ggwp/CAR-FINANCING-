@@ -5,6 +5,18 @@ import dotenv from "dotenv";
 import Groq from "groq-sdk";
 import cors from "cors";
 import { LoanApplication, SimulatedEmail, UploadedDocument, StatusHistoryItem } from "./src/types";
+import {
+  initializeDatabase,
+  getApplications,
+  getApplicationById,
+  createApplication,
+  updateApplication,
+  createDocument,
+  createHistoryItem,
+  getEmails,
+  createEmail,
+  clearEmails,
+} from "./database.js";
 
 dotenv.config();
 
@@ -15,72 +27,8 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
-// In-memory Database
-let applications: LoanApplication[] = [
-  {
-    id: 'TXN-940182',
-    applicantName: 'Sarah Jenkins',
-    applicantEmail: 'sarah.j@example.com',
-    carMake: 'Tesla',
-    carModel: 'Model Y',
-    carYear: 2024,
-    loanAmount: 48000,
-    downPayment: 10000,
-    termMonths: 60,
-    interestRate: 4.39,
-    monthlyPayment: 874.50,
-    creditScore: 780,
-    acquisitionMode: 'FINANCING',
-    status: 'UNDER_REVIEW',
-    statusUpdatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-    biometricSecured: true,
-    documents: [
-      { id: 'doc-1', name: 'Drivers_License_Sarah.png', type: 'ID', size: 1420500, uploadedAt: new Date(Date.now() - 3600000 * 23).toISOString() },
-      { id: 'doc-2', name: 'Paystub_May2026.pdf', type: 'INCOME', size: 2310200, uploadedAt: new Date(Date.now() - 3600000 * 23).toISOString() },
-    ],
-    history: [
-      { id: 'hist-1', status: 'SUBMITTED', timestamp: new Date(Date.now() - 3600000 * 24).toISOString(), description: 'Loan application submitted matching Tesla Model Y configuration.' },
-      { id: 'hist-2', status: 'DOCUMENTS_PENDING', timestamp: new Date(Date.now() - 3600000 * 23).toISOString(), description: 'Identity and income verification files requested by underwriter.' },
-      { id: 'hist-3', status: 'UNDER_REVIEW', timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), description: 'Required papers cleared. Loan documentation passed to primary underwriter.' },
-    ],
-  },
-  {
-    id: 'TXN-882351',
-    applicantName: 'Marcus Bennett',
-    applicantEmail: 'm.bennett@example.com',
-    carMake: 'BMW',
-    carModel: 'M4 Competition',
-    carYear: 2023,
-    loanAmount: 72000,
-    downPayment: 15000,
-    termMonths: 48,
-    interestRate: 6.15,
-    monthlyPayment: 1695.40,
-    creditScore: 710,
-    acquisitionMode: 'RENT_TO_OWN',
-    status: 'DOCUMENTS_PENDING',
-    statusUpdatedAt: new Date(Date.now() - 3600000 * 1).toISOString(),
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    biometricSecured: false,
-    documents: [],
-    history: [
-      { id: 'hist-11', status: 'SUBMITTED', timestamp: new Date(Date.now() - 3600000 * 4).toISOString(), description: 'Loan application submitted for pre-owned BMW M4 Competition.' },
-      { id: 'hist-12', status: 'DOCUMENTS_PENDING', timestamp: new Date(Date.now() - 3600000 * 1).toISOString(), description: 'Waiting for identity documents (valid state Drivers License).' },
-    ],
-  }
-];
-
-let simulatedEmails: SimulatedEmail[] = [
-  {
-    id: 'em-1',
-    to: 'mcars.itdept@gmail.com',
-    subject: 'Car Financing Portal: App Activated',
-    body: 'Welcome to your premium car financing dashboard. Secure biometrics and document uploads are now primed and active.',
-    sentAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-    read: false
-  }
-];
+// Initialize SQLite database
+initializeDatabase();
 
 // Helper to push a simulated email and log it
 function sendSimulatedEmail(to: string, subject: string, body: string) {
@@ -92,7 +40,7 @@ function sendSimulatedEmail(to: string, subject: string, body: string) {
     sentAt: new Date().toISOString(),
     read: false,
   };
-  simulatedEmails.unshift(newEmail);
+  createEmail(newEmail);
   console.log(`[SIMULATED EMAIL SENT] to: ${to} | subject: ${subject}`);
 }
 
@@ -115,7 +63,7 @@ function getGroqClient(): Groq {
 
 // REST endpoints
 app.get("/api/applications", (req, res) => {
-  res.json(applications);
+  res.json(getApplications());
 });
 
 app.post("/api/applications", (req, res) => {
@@ -144,7 +92,7 @@ app.post("/api/applications", (req, res) => {
 
   const currentMode = acquisitionMode || 'FINANCING';
 
-  const newApp: LoanApplication = {
+  const newApp = createApplication({
     id,
     applicantName,
     applicantEmail,
@@ -158,28 +106,28 @@ app.post("/api/applications", (req, res) => {
     monthlyPayment: Number(monthlyPayment),
     creditScore: Number(creditScore),
     acquisitionMode: currentMode,
-    status: 'DOCUMENTS_PENDING', // Initial state asking for verification docs
+    status: 'DOCUMENTS_PENDING',
     statusUpdatedAt: timestamp,
     createdAt: timestamp,
-    biometricSecured: !!biometricSecured,
-    documents: [],
-    history: [
-      {
-        id: `hist-${Math.floor(10000 + Math.random() * 90000)}`,
-        status: 'SUBMITTED',
-        timestamp,
-        description: `Application reservation for ${carMake} ${carModel} via [${currentMode}] submitted successfully by ${applicantName}.`
-      },
-      {
-        id: `hist-${Math.floor(10000 + Math.random() * 90000)}`,
-        status: 'DOCUMENTS_PENDING',
-        timestamp,
-        description: 'Underwriters require ID, Proof of Income, and vehicle insurance to begin review.'
-      }
-    ]
-  };
+    biometricSecured: !!biometricSecured
+  });
 
-  applications.unshift(newApp);
+  // Add history items
+  createHistoryItem({
+    id: `hist-${Math.floor(10000 + Math.random() * 90000)}`,
+    applicationId: id,
+    status: 'SUBMITTED',
+    timestamp,
+    description: `Application reservation for ${carMake} ${carModel} via [${currentMode}] submitted successfully by ${applicantName}.`
+  });
+
+  createHistoryItem({
+    id: `hist-${Math.floor(10000 + Math.random() * 90000)}`,
+    applicationId: id,
+    status: 'DOCUMENTS_PENDING',
+    timestamp,
+    description: 'Underwriters require ID, Proof of Income, and vehicle insurance to begin review.'
+  });
 
   // Send Automated Simulated Emails!
   sendSimulatedEmail(
@@ -196,56 +144,60 @@ app.post("/api/applications/:id/documents", (req, res) => {
   const { id } = req.params;
   const { name, type, size } = req.body;
 
-  const appItem = applications.find(a => a.id === id);
+  const appItem = getApplicationById(id);
   if (!appItem) {
     return res.status(404).json({ error: "Application not found." });
   }
 
-  const newDoc: UploadedDocument = {
+  createDocument({
     id: `doc-${Math.random().toString(36).substr(2, 9)}`,
+    applicationId: id,
     name: name || "document.pdf",
     type: type || "ID",
     size: size || 1024 * 102,
     uploadedAt: new Date().toISOString()
-  };
-
-  appItem.documents.push(newDoc);
-  appItem.statusUpdatedAt = new Date().toISOString();
+  });
 
   // If we have at least one document, advance from DOCUMENTS_PENDING to UNDER_REVIEW automatically to simulate real-time workflow!
   if (appItem.status === 'DOCUMENTS_PENDING') {
-    appItem.status = 'UNDER_REVIEW';
+    updateApplication(id, {
+      status: 'UNDER_REVIEW',
+      statusUpdatedAt: new Date().toISOString()
+    });
+
     const histId = `hist-${Math.floor(10000 + Math.random() * 90000)}`;
-    appItem.history.push({
+    createHistoryItem({
       id: histId,
+      applicationId: id,
       status: 'UNDER_REVIEW',
       timestamp: new Date().toISOString(),
-      description: `Verification paper '${newDoc.name}' uploaded successfully. Status upgraded to Under Review.`
+      description: `Verification paper '${name || 'document.pdf'}' uploaded successfully. Status upgraded to Under Review.`
     });
 
     sendSimulatedEmail(
       appItem.applicantEmail,
       `Verification Received - Under Review [ID: ${id}]`,
-      `Hi ${appItem.applicantName},\n\nWe have successfully received your uploaded verification document (${newDoc.name}).\n\nYour application [ID: ${id}] has been moved to UNDER REVIEW status. Our automotive underwriting team is verifying the documents details. You can track this real-time directly through your portal.\n\nBest regards,\nAutomotive Underwriting Team`
+      `Hi ${appItem.applicantName},\n\nWe have successfully received your uploaded verification document (${name || 'document.pdf'}).\n\nYour application [ID: ${id}] has been moved to UNDER REVIEW status. Our automotive underwriting team is verifying the documents details. You can track this real-time directly through your portal.\n\nBest regards,\nAutomotive Underwriting Team`
     );
   } else {
     // Just add logs they submitted more documents
     const histId = `hist-${Math.floor(10000 + Math.random() * 90000)}`;
-    appItem.history.push({
+    createHistoryItem({
       id: histId,
+      applicationId: id,
       status: appItem.status,
       timestamp: new Date().toISOString(),
-      description: `Supplemental document '${newDoc.name}' uploaded successfully.`
+      description: `Supplemental document '${name || 'document.pdf'}' uploaded successfully.`
     });
   }
 
-  res.json(appItem);
+  res.json(getApplicationById(id)!);
 });
 
 // Configure status advance manually as a demo tool so the user can showcase "Real-time Tracker and Emailing Updates"!
 app.post("/api/applications/:id/advance", (req, res) => {
   const { id } = req.params;
-  const appItem = applications.find(a => a.id === id);
+  const appItem = getApplicationById(id);
   if (!appItem) {
     return res.status(404).json({ error: "Application not found." });
   }
@@ -276,10 +228,14 @@ app.post("/api/applications/:id/advance", (req, res) => {
     textDesc = "Application was reopened manually for premium recalculation/re-review.";
   }
 
-  appItem.status = nextStatus;
-  appItem.statusUpdatedAt = new Date().toISOString();
-  appItem.history.push({
+  updateApplication(id, {
+    status: nextStatus,
+    statusUpdatedAt: new Date().toISOString()
+  });
+
+  createHistoryItem({
     id: `hist-${Math.floor(10000 + Math.random() * 90000)}`,
+    applicationId: id,
     status: nextStatus,
     timestamp: new Date().toISOString(),
     description: textDesc
@@ -312,7 +268,7 @@ app.post("/api/applications/:id/advance", (req, res) => {
     );
   }
 
-  res.json(appItem);
+  res.json(getApplicationById(id)!);
 });
 
 // Configure biometric lock
@@ -320,34 +276,37 @@ app.post("/api/applications/:id/biometrics", (req, res) => {
   const { id } = req.params;
   const { enabled } = req.body;
 
-  const appItem = applications.find(a => a.id === id);
+  const appItem = getApplicationById(id);
   if (!appItem) {
     return res.status(404).json({ error: "Application not found." });
   }
 
-  appItem.biometricSecured = !!enabled;
+  updateApplication(id, {
+    biometricSecured: !!enabled
+  });
 
   const statusDesc = enabled
     ? "Biometric authentication (FaceID/TouchID) linked securely to this loan profile."
     : "Biometric lock deactivated for this loan profile.";
 
-  appItem.history.push({
+  createHistoryItem({
     id: `hist-${Math.floor(10000 + Math.random() * 90000)}`,
+    applicationId: id,
     status: appItem.status,
     timestamp: new Date().toISOString(),
     description: statusDesc
   });
 
-  res.json(appItem);
+  res.json(getApplicationById(id)!);
 });
 
 // Track email logs
 app.get("/api/emails", (req, res) => {
-  res.json(simulatedEmails);
+  res.json(getEmails());
 });
 
 app.post("/api/emails/clear", (req, res) => {
-  simulatedEmails = [];
+  clearEmails();
   res.json({ success: true });
 });
 
