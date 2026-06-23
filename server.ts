@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import Groq from "groq-sdk";
+import cors from "cors";
 import { LoanApplication, SimulatedEmail, UploadedDocument, StatusHistoryItem } from "./src/types";
 
 dotenv.config();
@@ -11,6 +12,7 @@ const app = express();
 const PORT = 3000;
 
 // Setup middleware
+app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
 // In-memory Database
