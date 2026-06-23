@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import Groq from "groq-sdk";
 import { LoanApplication, SimulatedEmail, UploadedDocument, StatusHistoryItem } from "./src/types";
 
 dotenv.config();
@@ -95,26 +95,20 @@ function sendSimulatedEmail(to: string, subject: string, body: string) {
 }
 
 // -----------------------------------------------------------------
-// AISTUDIO-BUILD TELEMETRY CLIENT CORRESPONDING TO RULES
+// GROQ AI CLIENT
 // -----------------------------------------------------------------
-let geminiAI: GoogleGenAI | null = null;
-function getGeminiClient(): GoogleGenAI {
-  if (!geminiAI) {
-    const key = process.env.GEMINI_API_KEY;
+let groqClient: Groq | null = null;
+function getGroqClient(): Groq {
+  if (!groqClient) {
+    const key = process.env.GROQ_API_KEY;
     if (!key) {
-      console.warn("WARNING: GEMINI_API_KEY environment variable is not set. AI Features will degrade gracefully with custom responses.");
+      console.warn("WARNING: GROQ_API_KEY environment variable is not set. AI Features will degrade gracefully with custom responses.");
     }
-    // Must use named parameter callback, setting 'User-Agent' specifically
-    geminiAI = new GoogleGenAI({
-      apiKey: key || "MOCK_KEY",
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build'
-        }
-      }
+    groqClient = new Groq({
+      apiKey: key || "MOCK_KEY"
     });
   }
-  return geminiAI;
+  return groqClient;
 }
 
 // REST endpoints
@@ -355,7 +349,7 @@ app.post("/api/emails/clear", (req, res) => {
   res.json({ success: true });
 });
 
-// AI Counselor endpoint using gemini-3.1-pro-preview with HIGH thinking level
+// AI Counselor endpoint using Groq inference
 app.post("/api/counselor", async (req, res) => {
   const { messages, systemContext } = req.body;
 
@@ -364,16 +358,11 @@ app.post("/api/counselor", async (req, res) => {
   }
 
   try {
-    const aiClient = getGeminiClient();
+    const groq = getGroqClient();
 
-    // Compile conversational thread for Gemini
-    // Map client messages to Gemini parts format
-    const contents = messages.map((m: any) => ({
-      role: m.sender === "user" ? "user" : "model",
-      parts: [{ text: m.text }]
-    }));
-
-    const systemInstruction = `You are a premier, highly informative, elite AI Car Finance Counselor representing custom automotive loan sponsors. 
+    const systemMessage = {
+      role: "system" as const,
+      content: `You are a premier, highly informative, elite AI Car Finance Counselor representing MCARS FINANCE. 
 Your goal is to provide deep, analytical, crystal-clear budgeting advise on automobile loans, leasing versus buying, interest rates (APRs), credit tiers influence, and down payment optimization.
 
 Keep your tone: Professional, deeply analytical, helpful, encouraging, and clear of marketing fluff.
@@ -381,7 +370,13 @@ Context parameters about the current user state:
 ${JSON.stringify(systemContext || {}, null, 2)}
 
 Provide clear bullet points and structural layouts when making numerical comparisons. 
-Answer queries accurately and professionally.`;
+Answer queries accurately and professionally.`
+    };
+
+    const chatMessages = messages.map((m: any) => ({
+      role: m.sender === "user" ? "user" as const : "assistant" as const,
+      content: m.text
+    }));
 
     // Robust simulation generator helper to keep the UX extremely responsive
     const generateSimulatedResponse = () => {
@@ -481,12 +476,10 @@ Would you like me to construct a custom amortization schedule for a specific veh
     };
 
     // Retrieve active API key to see if we can do real AI response
-    const hasRealApiKey = process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "MY_GEMINI_API_KEY" && process.env.GEMINI_API_KEY !== "";
+    const hasRealApiKey = process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== "MY_GROQ_API_KEY" && process.env.GROQ_API_KEY !== "";
 
     if (!hasRealApiKey) {
-      // Mocked high thinking responses when the API Key is not yet configured, to demonstrate excellent applet behavior.
       const simulated = generateSimulatedResponse();
-      // Add delay to mimic reasoning processing
       await new Promise(r => setTimeout(r, 1200));
 
       return res.json({
@@ -499,61 +492,41 @@ Would you like me to construct a custom amortization schedule for a specific veh
     let extractedThinking = "";
     let callSucceeded = false;
 
-    // 1. Try with preferred gemini-3.1-pro-preview with HIGH thinking level
+    // 1. Try with preferred llama-3.3-70b-versatile
     try {
-      const response = await aiClient.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: contents,
-        config: {
-          systemInstruction,
-          thinkingConfig: {
-            thinkingLevel: ThinkingLevel.HIGH
-          }
-        }
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [systemMessage, ...chatMessages],
+        temperature: 0.7,
+        max_tokens: 4096
       });
-      replyText = response.text || "";
+      replyText = completion.choices[0]?.message?.content || "";
       callSucceeded = true;
-
-      // Check if thinking is returned (gemini-3.1-pro-preview may provide it, let's look for candidates if they have reasoning/thinking)
-      try {
-        const parts = response.candidates?.[0]?.content?.parts;
-        if (parts) {
-          for (const p of parts) {
-            if ((p as any).thought === true || (p as any).thinking) {
-              extractedThinking = (p as any).text || "";
-            }
-          }
-        }
-      } catch (e) {
-        // Ignored
-      }
     } catch (proError: any) {
-      console.warn("Attempt with gemini-3.1-pro-preview failed with rate limit/quota. Retrying with gemini-3.5-flash fallback...", proError.message);
+      console.warn("Attempt with llama-3.3-70b-versatile failed. Retrying with mixtral-8x7b-32768 fallback...", proError.message);
       
-      // 2. Fallback to basic gemini-3.5-flash model to bypass pro quota limits
+      // 2. Fallback to mixtral-8x7b-32768
       try {
-        const response = await aiClient.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: contents,
-          config: {
-            systemInstruction
-          }
+        const completion = await groq.chat.completions.create({
+          model: "mixtral-8x7b-32768",
+          messages: [systemMessage, ...chatMessages],
+          temperature: 0.7,
+          max_tokens: 4096
         });
-        replyText = response.text || "";
+        replyText = completion.choices[0]?.message?.content || "";
         callSucceeded = true;
-        extractedThinking = "Fell back to highly efficient gemini-3.5-flash model to bypass pro quota limit constraints.";
+        extractedThinking = "Fell back to mixtral-8x7b-32768 model to bypass primary model quota limit constraints.";
       } catch (flashError: any) {
-        console.error("All server-side Gemini API calls failed. Falling back to elite simulated responses.", flashError.message);
+        console.error("All Groq API calls failed. Falling back to elite simulated responses.", flashError.message);
       }
     }
 
     if (callSucceeded && replyText) {
       res.json({
         text: replyText,
-        thinking: extractedThinking || "High-thinking parameters analyzed amortization metrics, credit tiers, and DTI thresholds to formulate the optimal response."
+        thinking: extractedThinking || "Groq inference analyzed amortization metrics, credit tiers, and DTI thresholds to formulate the optimal response."
       });
     } else {
-      // 3. Fallback to delicious high-fidelity locally simulated response if Gemini API is entirely unavailable
       const simulated = generateSimulatedResponse();
       res.json({
         text: simulated.simulatedReply,
@@ -562,7 +535,7 @@ Would you like me to construct a custom amortization schedule for a specific veh
     }
 
   } catch (error: any) {
-    console.error("Gemini AI API Error:", error);
+    console.error("Groq AI API Error:", error);
     res.status(500).json({ 
       error: "An error occurred with our AI Consultation engine.", 
       details: error.message 

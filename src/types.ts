@@ -48,7 +48,7 @@ export interface Message {
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
-  thinking?: string; // To showcase the Gemini high thinking output if desired
+  thinking?: string; // To showcase the Groq model reasoning output if desired
 }
 
 export interface SimulatedEmail {

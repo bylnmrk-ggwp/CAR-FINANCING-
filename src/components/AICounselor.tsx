@@ -92,7 +92,7 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
             </div>
             
             <p className="text-xs text-neutral-400 leading-relaxed">
-              Equipped with <span className="text-neutral-200">gemini-3.1-pro-preview</span>, the portal evaluates multi-variable calculations on down payments, amortization periods, and risk profiling.
+              Equipped with <span className="text-neutral-200">llama-3.3-70b (Groq)</span>, the portal evaluates multi-variable calculations on down payments, amortization periods, and risk profiling.
             </p>
 
             <div className="space-y-2 pt-2">
@@ -138,7 +138,7 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
               <div>
                 <h4 className="text-sm font-semibold text-white">Underwriter AI Consultant</h4>
-                <p className="text-[10px] text-neutral-400 font-mono">gemini-3.1-pro-preview : ThinkingLevel.HIGH</p>
+                <p className="text-[10px] text-neutral-400 font-mono">llama-3.3-70b-versatile : Groq Inference</p>
               </div>
             </div>
             

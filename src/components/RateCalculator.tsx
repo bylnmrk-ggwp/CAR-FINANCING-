@@ -629,7 +629,7 @@ export default function RateCalculator({ onPreQualify }: RateCalculatorProps) {
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-bold font-display text-white">Underwriting AI Acquisition Suite</h3>
-                <p className="text-[10px] text-neutral-400 font-mono">gemini-3.1-pro-preview : ThinkingLevel.HIGH</p>
+                <p className="text-[10px] text-neutral-400 font-mono">llama-3.3-70b-versatile : Groq Inference</p>
               </div>
             </div>
 
