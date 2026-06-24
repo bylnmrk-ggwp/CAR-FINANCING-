@@ -30,56 +30,51 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
-try {
-  initializeDatabase();
-} catch (err) {
-  console.error("Database initialization failed:", err);
-}
-
-// Initialize async job queue
+// Lazy initialization (avoids SnapStart stale connections)
+let _initialized = false;
 let jobQueue: JobQueue;
-try {
-  jobQueue = getJobQueue(db);
-} catch (err) {
-  console.error("Job queue initialization failed:", err);
-  jobQueue = null as any;
-}
-
-// Initialize webhook manager
 let webhookManager: ReturnType<typeof getWebhookManager>;
-try {
-  webhookManager = getWebhookManager(db);
-} catch (err) {
-  console.error("Webhook manager initialization failed:", err);
-  webhookManager = null as any;
-}
 
-// Email delivery handler: processes send_email jobs in background
-if (jobQueue) {
-jobQueue.processJobs('send_email', async (job) => {
-  const payload = JSON.parse(job.payload);
-  createEmail({
-    id: `em-${Math.random().toString(36).substr(2, 9)}`,
-    to: payload.to,
-    subject: payload.subject,
-    body: payload.body,
-    sentAt: new Date().toISOString(),
-    read: false,
-  });
-  console.log(`[JOB QUEUE] Email sent to: ${payload.to} | subject: ${payload.subject}`);
-}, 500);
+function lazyInit() {
+  if (_initialized) return;
+  _initialized = true;
 
-// Document processing handler: validates uploaded documents in background
-jobQueue.processJobs('process_document', async (job) => {
-  const payload = JSON.parse(job.payload);
-  // Simulate async validation (OCR, virus scan, format check)
-  const isValid = payload.fileName && payload.fileName.length > 0;
-  if (!isValid) {
-    throw new Error(`Document ${payload.fileName || 'unknown'} failed validation`);
+  try { initializeDatabase(); } catch (err) { console.error("Database init failed:", err); }
+
+  try { jobQueue = getJobQueue(db); } catch (err) { console.error("Job queue init failed:", err); jobQueue = null as any; }
+
+  try { webhookManager = getWebhookManager(db); } catch (err) { console.error("Webhook manager init failed:", err); webhookManager = null as any; }
+
+  if (jobQueue) {
+    jobQueue.processJobs('send_email', async (job) => {
+      const payload = JSON.parse(job.payload);
+      createEmail({
+        id: `em-${Math.random().toString(36).substr(2, 9)}`,
+        to: payload.to,
+        subject: payload.subject,
+        body: payload.body,
+        sentAt: new Date().toISOString(),
+        read: false,
+      });
+      console.log(`[JOB QUEUE] Email sent to: ${payload.to} | subject: ${payload.subject}`);
+    }, 500);
+
+    jobQueue.processJobs('process_document', async (job) => {
+      const payload = JSON.parse(job.payload);
+      const isValid = payload.fileName && payload.fileName.length > 0;
+      if (!isValid) {
+        throw new Error(`Document ${payload.fileName || 'unknown'} failed validation`);
+      }
+      console.log(`[JOB QUEUE] Document processed: ${payload.fileName} (${payload.fileType}) for app ${payload.applicationId}`);
+    }, 800);
   }
-  console.log(`[JOB QUEUE] Document processed: ${payload.fileName} (${payload.fileType}) for app ${payload.applicationId}`);
-}, 800);
 }
+
+// Middleware to ensure lazy init runs before any route handler
+app.use((_req: any, _res: any, next: any) => {
+  lazyInit();
+  next();
+});
 
 // RBAC auth middleware
 function authenticate(req: AuthenticatedRequest, res: any, next: any) {
