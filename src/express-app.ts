@@ -480,18 +480,18 @@ Answer queries accurately and professionally.`
 
       if (lastUserQuestion.toLowerCase().includes("lease") || lastUserQuestion.toLowerCase().includes("buy")) {
         simulatedThinking = "User wants to compare Leasing vs. Buying a car. Let's analyze depreciation, contract terms, down payment leverage, and final ownership value.\n- Leasing has lower payments but no equity.\n- Buying builds equity but has higher initial payments.\nNeed to format with clean markdown grid comparison.";
-        simulatedReply = `### Leasing vs. Buying: Comprehensive Comparison
+        simulatedReply = `### Leasing vs. Financing: Professional Analysis
 
-Comparing leasing and buying is a fundamental step. Here is a curated, analytical breakdown based on your financial footprint:
+A strategic comparison between leasing and financing options based on your financial objectives:
 
-| Feature | Leasing (Simulated) | Buying (Simulated) |
+| **Financial Metric** | **Leasing Structure** | **Financing Structure** |
 | :--- | :--- | :--- |
-| **Monthly Payment** | 30% - 40% Lower | Higher payments (building equity) |
-| **Ownership** | Vehicle returned in 2-3 years | You own the vehicle fully after payoff |
-| **Mileage Limits** | Hard limit (usually 10k-15k miles/yr) | No mileage limits or penalty fees |
-| **Long-term Cost** | Infinite payment cycle | Cheaper overall once loan is fully retired |
+| **Monthly Payment** | 30% - 40% reduction in obligation | Higher payments (building equity position) |
+| **Asset Ownership** | Vehicle returned at lease term conclusion | Full ownership transfer upon loan completion |
+| **Mileage Parameters** | Contractual limits (typically 10k-15k miles annually) | Unlimited mileage with no penalty assessments |
+| **Long-Term Cost** | Continuous payment cycle with no equity accumulation | Cost-effective after loan retirement with retained asset value |
 
-**Recommendation:** If you change cars frequently and prefer lower monthly obligations, **Lease** is highly suited. If you drive long distances annually and look to build asset equity, **Buy** with a solid down payment (at least 20%) is the financially optimal strategy.`;
+**Strategic Recommendation:** For clients who prioritize vehicle rotation every 2-3 years with minimal monthly cash flow impact, **Leasing** provides optimal flexibility. For clients with high annual mileage requirements seeking to establish long-term asset equity, **Financing** with a minimum 20% down payment represents the superior financial strategy.`;
       } else if (lastUserQuestion.toLowerCase().includes("rent") || lastUserQuestion.toLowerCase().includes("own") || lastUserQuestion.toLowerCase().includes("cash") || lastUserQuestion.toLowerCase().includes("acquisition") || lastUserQuestion.toLowerCase().includes("compare options") || lastUserQuestion.toLowerCase().includes("rate")) {
         const activeCar = systemContext.carMake ? `${systemContext.carMake} ${systemContext.carModel}` : "Premium Vehicle preset";
         const valPrice = Number(systemContext.price || 45000);
