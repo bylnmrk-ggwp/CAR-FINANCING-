@@ -10,24 +10,36 @@ const dbPath = process.env.VERCEL
   ? path.join('/tmp', 'mcars-finance.db')
   : path.join(process.cwd(), 'mcars-finance.db');
 
-let db: Database;
+let realDb: Database;
 let initError: Error | null = null;
 
 function getDatabase(): Database {
   if (initError) throw initError;
-  if (!db) throw new Error("Database not initialized");
-  return db;
+  if (!realDb) throw new Error("Database not initialized");
+  return realDb;
+}
+
+function createDbProxy(): Database {
+  return new Proxy({} as Database, {
+    get(_, prop: string) {
+      const d = getDatabase();
+      const val = (d as any)[prop];
+      return typeof val === 'function' ? val.bind(d) : val;
+    }
+  });
 }
 
 const _require = createRequire(import.meta.url);
 try {
   const BetterSqlite3: typeof DatabaseModule = _require('better-sqlite3');
-  db = new BetterSqlite3(dbPath);
-  db.pragma('foreign_keys = ON');
+  realDb = new BetterSqlite3(dbPath);
+  realDb.pragma('foreign_keys = ON');
 } catch (err: any) {
   console.error("Failed to initialize SQLite database:", err);
   initError = err;
 }
+
+const db = createDbProxy();
 
 const ALLOWED_APP_SORT = ['createdAt', 'statusUpdatedAt', 'applicantName', 'loanAmount', 'creditScore', 'status', 'carMake', 'carYear'];
 const ALLOWED_EMAIL_SORT = ['sentAt', 'subject', 'toEmail', 'read'];

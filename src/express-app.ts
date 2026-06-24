@@ -30,15 +30,32 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
-initializeDatabase();
+try {
+  initializeDatabase();
+} catch (err) {
+  console.error("Database initialization failed:", err);
+}
 
 // Initialize async job queue
-const jobQueue = getJobQueue(db);
+let jobQueue: JobQueue;
+try {
+  jobQueue = getJobQueue(db);
+} catch (err) {
+  console.error("Job queue initialization failed:", err);
+  jobQueue = null as any;
+}
 
 // Initialize webhook manager
-const webhookManager = getWebhookManager(db);
+let webhookManager: ReturnType<typeof getWebhookManager>;
+try {
+  webhookManager = getWebhookManager(db);
+} catch (err) {
+  console.error("Webhook manager initialization failed:", err);
+  webhookManager = null as any;
+}
 
 // Email delivery handler: processes send_email jobs in background
+if (jobQueue) {
 jobQueue.processJobs('send_email', async (job) => {
   const payload = JSON.parse(job.payload);
   createEmail({
@@ -62,6 +79,7 @@ jobQueue.processJobs('process_document', async (job) => {
   }
   console.log(`[JOB QUEUE] Document processed: ${payload.fileName} (${payload.fileType}) for app ${payload.applicationId}`);
 }, 800);
+}
 
 // RBAC auth middleware
 function authenticate(req: AuthenticatedRequest, res: any, next: any) {
