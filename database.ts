@@ -7,24 +7,33 @@ const dbPath = process.env.VERCEL
   ? path.join('/tmp', 'mcars-finance.db')
   : path.join(process.cwd(), 'mcars-finance.db');
 
-function getOrCreateDb(): Database.Database {
-  try {
-    const d = new Database(dbPath);
-    d.pragma('foreign_keys = ON');
-    return d;
-  } catch (err: any) {
-    console.error("Failed to initialize SQLite database:", err);
-    throw err;
+let _db: Database.Database | null = null;
+
+function getDb(): Database.Database {
+  if (!_db) {
+    _db = new Database(dbPath);
+    _db.pragma('foreign_keys = ON');
+    runSchemaInit();
   }
+  return _db;
 }
 
-const db = getOrCreateDb();
+const db = new Proxy({} as Database.Database, {
+  get(_target, prop: string | symbol) {
+    const d = getDb();
+    const val = (d as any)[prop];
+    return typeof val === 'function' ? val.bind(d) : val;
+  }
+});
+
+export function initializeDatabase() {
+  getDb(); // triggers lazy init + schema
+}
 
 const ALLOWED_APP_SORT = ['createdAt', 'statusUpdatedAt', 'applicantName', 'loanAmount', 'creditScore', 'status', 'carMake', 'carYear'];
 const ALLOWED_EMAIL_SORT = ['sentAt', 'subject', 'toEmail', 'read'];
 
-// Initialize database schema
-export function initializeDatabase() {
+function runSchemaInit() {
   // Create applications table
   db.exec(`
     CREATE TABLE IF NOT EXISTS applications (
