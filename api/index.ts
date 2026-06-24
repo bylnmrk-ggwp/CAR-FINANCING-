@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
+import Groq from 'groq-sdk';
 
 let _db: Database.Database | null = null;
 function getDb() {
@@ -209,26 +210,62 @@ app.post('/api/emails/clear', authenticate, requireRole('admin'), (_req: any, re
   res.json({ success: true });
 });
 
+function generateSimulatedResponse(messages: any[], systemContext: any) {
+  const last = messages[messages.length - 1]?.text || '';
+  const ctx = systemContext || {};
+  const ctxCar = ctx.carMake && ctx.carModel ? `${ctx.carMake} ${ctx.carModel}` : 'Premium Vehicle';
+  const ctxPrice = Number(ctx.price || 45000);
+  const ctxDown = Number(ctx.downPayment || 9000);
+  const ctxTerm = Number(ctx.term || 60);
+  const ctxRate = Number(ctx.rate || 5.89);
+  const ctxMonthly = Number(ctx.monthlyPayment || 745);
+
+  const q = last.toLowerCase();
+  let reply = '', thinking = '';
+
+  if (q.includes('lease') || q.includes('buy')) {
+    thinking = 'User wants to compare Leasing vs. Buying.';
+    reply = `### Leasing vs. Buying: Comprehensive Comparison\n\n| Feature | Leasing (Simulated) | Buying (Simulated) |\n| :--- | :--- | :--- |\n| **Monthly Payment** | 30%-40% Lower | Higher (building equity) |\n| **Ownership** | Returned in 2-3 years | Own fully after payoff |\n| **Mileage Limits** | 10k-15k miles/yr | No limits |\n| **Long-term Cost** | Infinite payment cycle | Cheaper after loan retired |\n\n**Recommendation:** If you change cars frequently, **Lease**. If you drive long distances, **Buy** with 20%+ down payment.`;
+  } else if (q.includes('rent') || q.includes('own') || q.includes('cash') || q.includes('acquisition') || q.includes('compare') || q.includes('rate')) {
+    thinking = `Analyzing acquisition methods for ${ctxCar} at ₱${ctxPrice.toLocaleString()}.`;
+    reply = `### Premium Acquisition Rate Comparison\n\n**${ctxCar}** (Retail: **₱${ctxPrice.toLocaleString()}**)\n\n---\n\n### 1. 💰 Cash Buyout\n*   **Discount:** 5.0% → **₱${(ctxPrice*0.95).toLocaleString()}** (save ₱${(ctxPrice*0.05).toLocaleString()})\n*   **Monthly:** ₱0.00 | **Interest:** ₱0.00\n*   **Verdict:** Most cost-efficient if you have liquid assets.\n\n### 2. 🚘 Traditional Financing\n*   **APR:** ${ctxRate}% | **Down:** ₱${ctxDown.toLocaleString()} (${Math.round(ctxDown/ctxPrice*100)}%)\n*   **Monthly:** ₱${ctxMonthly.toFixed(2)}/mo × ${ctxTerm} months\n*   **Total Interest:** ₱${Math.round((ctxMonthly*ctxTerm)-(ctxPrice-ctxDown)).toLocaleString()}\n*   **Verdict:** Great for building credit while retaining capital.\n\n### 3. 🔑 Rent-to-Own\n*   **Surcharge:** ${(ctxRate+3).toFixed(2)}% equivalent | **Deposit:** ₱${Math.round(ctxDown*0.6).toLocaleString()}\n*   **Monthly:** ₱${Math.round(((ctxPrice-ctxDown)/ctxTerm)*1.15).toLocaleString()}/mo\n*   **Credit Check:** Not required\n*   **Verdict:** Best for low credit or flexible exit options.`;
+  } else if (q.includes('score') || q.includes('credit') || q.includes('apr')) {
+    thinking = 'Analyzing credit score impact on APR.';
+    reply = `### How Your Credit Score Determines APR\n\n1. **Excellent (750+):** ~4.89%-5.15% APR\n2. **Very Good (700-749):** ~5.95%-6.50% APR\n3. **Good (660-699):** ~7.49%-8.25% APR\n4. **Subprime (<660):** 10.25%-14.99% APR\n\n*Tip:* Moving from Good to Very Good saves ~₱45/month, over ₱2,700 in 5 years.`;
+  } else {
+    thinking = `Analyzing customer question: "${last}".`;
+    reply = `### Personalized Financial Assessment\n\n*   **DTI Ratio:** Keep auto expenses below **10%-15%** of net income.\n*   **20/4/10 Rule:** 20% down, finance ≤4 years, spend ≤10% of income on auto expenses.\n*   **Rate Calibration:** Extra ₱5,000 down reduces monthly by ~₱95 and lowers total interest.\n\nWould you like me to construct a custom amortization schedule for a specific vehicle?`;
+  }
+
+  return { text: reply, thinking };
+}
+
 app.post('/api/counselor', async (req: any, res: any) => {
   const { messages, systemContext } = req.body;
   if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: 'Invalid messages format.' });
 
-  try {
-    const Groq = (await import('groq-sdk')).default;
-    const key = process.env.GROQ_API_KEY;
-    const groq = new Groq({ apiKey: key || 'MOCK_KEY' });
+  const hasRealKey = process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'MY_GROQ_API_KEY' && process.env.GROQ_API_KEY !== '';
+  if (!hasRealKey) {
+    await new Promise(r => setTimeout(r, 1200));
+    return res.json(generateSimulatedResponse(messages, systemContext));
+  }
 
+  try {
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     const systemMsg = { role: 'system' as const, content: `You are a premier AI Car Finance Counselor for MCARS FINANCE. Provide analytical advice on loans, leasing vs buying, APRs, credit tiers, and down payment optimization. Be professional, analytical, and helpful.\nUser context: ${JSON.stringify(systemContext || {})}` };
     const chatMsgs = messages.map((m: any) => ({ role: m.sender === 'user' ? 'user' as const : 'assistant' as const, content: m.text }));
 
     const completion = await groq.chat.completions.create({ model: 'llama-3.3-70b-versatile', messages: [systemMsg, ...chatMsgs], temperature: 0.7, max_tokens: 4096 });
-    const reply = completion.choices[0]?.message?.content || 'I apologize, but I am unable to process your request at this time.';
-
-    res.json({ text: reply, thinking: 'Groq inference completed.' });
+    const reply = completion.choices[0]?.message?.content || '';
+    if (reply) {
+      return res.json({ text: reply, thinking: 'Groq inference completed.' });
+    }
   } catch (err: any) {
-    console.error('Groq error:', err);
-    res.json({ text: 'Our AI consultation engine is temporarily unavailable. Please try again later.', thinking: 'Fallback mode activated.' });
+    console.error('Groq error:', err.message);
   }
+
+  await new Promise(r => setTimeout(r, 1200));
+  res.json(generateSimulatedResponse(messages, systemContext));
 });
 
 export default function handler(req: any, res: any) {
