@@ -252,12 +252,43 @@ app.post('/api/counselor', async (req: any, res: any) => {
 
   try {
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const systemMsg = { role: 'system' as const, content: `You are a premier AI Car Finance Counselor for MCARS FINANCE. Provide analytical advice on loans, leasing vs buying, APRs, credit tiers, and down payment optimization. Be professional, analytical, and helpful.\n\nIMPORTANT: When comparing Leasing vs. Buying/Financing, use formal, professional language:\n- Title: "Leasing vs. Financing: Professional Analysis"\n- Table headers: "Financial Metric", "Leasing Structure", "Financing Structure"\n- Use terms like: "reduction in obligation", "equity position", "contractual limits", "asset ownership", "strategic recommendation"\n- Avoid casual phrases like "lower", "higher", "no limits" - use formal equivalents\n\nUser context: ${JSON.stringify(systemContext || {})}` };
+    const systemMsg = { role: 'system' as const, content: `You are a premier, highly informative, elite AI Car Finance Counselor representing MCARS FINANCE. 
+Your goal is to provide deep, analytical, crystal-clear budgeting advise on automobile loans, leasing versus buying, interest rates (APRs), credit tiers influence, and down payment optimization.
+
+Keep your tone: Professional, deeply analytical, helpful, encouraging, and clear of marketing fluff.
+
+IMPORTANT: When comparing Leasing vs. Buying/Financing, use formal, professional language:
+- Title: "Leasing vs. Financing: Professional Analysis"
+- Table headers: "Financial Metric", "Leasing Structure", "Financing Structure"
+- Use terms like: "reduction in obligation", "equity position", "contractual limits", "asset ownership", "strategic recommendation"
+- Avoid casual phrases like "lower", "higher", "no limits" - use formal equivalents
+
+Context parameters about the current user state:
+${JSON.stringify(systemContext || {}, null, 2)}
+
+Provide clear bullet points and structural layouts when making numerical comparisons. 
+Answer queries accurately and professionally.` };
     const chatMsgs = messages.map((m: any) => ({ role: m.sender === 'user' ? 'user' as const : 'assistant' as const, content: m.text }));
 
-    const completion = await groq.chat.completions.create({ model: 'llama-3.3-70b-versatile', messages: [systemMsg, ...chatMsgs], temperature: 0.7, max_tokens: 4096 });
-    const reply = completion.choices[0]?.message?.content || '';
-    if (reply) {
+    let reply = '';
+    let callSucceeded = false;
+
+    try {
+      const completion = await groq.chat.completions.create({ model: 'llama-3.3-70b-versatile', messages: [systemMsg, ...chatMsgs], temperature: 0.7, max_tokens: 4096 });
+      reply = completion.choices[0]?.message?.content || '';
+      callSucceeded = true;
+    } catch (primaryError: any) {
+      console.warn('Primary model llama-3.3-70b-versatile failed. Retrying with mixtral-8x7b-32768 fallback...', primaryError.message);
+      try {
+        const completion = await groq.chat.completions.create({ model: 'mixtral-8x7b-32768', messages: [systemMsg, ...chatMsgs], temperature: 0.7, max_tokens: 4096 });
+        reply = completion.choices[0]?.message?.content || '';
+        callSucceeded = true;
+      } catch (fallbackError: any) {
+        console.error('All Groq API calls failed. Falling back to simulated responses.', fallbackError.message);
+      }
+    }
+
+    if (callSucceeded && reply) {
       return res.json({ text: reply, thinking: 'Groq inference completed.' });
     }
   } catch (err: any) {
