@@ -131,7 +131,7 @@ export default function App() {
       <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center p-4">
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 max-w-sm w-full text-center space-y-6">
           <div className="flex justify-center">
-            <img src="/assets/.aistudio/image/main.png" alt="MCARS" className="h-12 w-auto" />
+            <img src="/assets/.aistudio/image/white.png" alt="MCARS" className="h-12 w-auto" />
           </div>
           <h1 className="text-xl font-bold uppercase tracking-wider">Sign In</h1>
           <p className="text-xs text-neutral-400">Enter your email to access the financing portal.</p>
@@ -188,7 +188,7 @@ export default function App() {
           {/* Logo brand label */}
           <div className="flex items-center gap-3">
             <img
-              src={isDark ? "/assets/.aistudio/image/white.png" : "/assets/.aistudio/image/main.png"}
+              src={isDark ? "/assets/.aistudio/image/white.png" : "/assets/.aistudio/image/nav.png"}
               alt="MCARS FINANCE"
               className="h-10 sm:h-12 w-auto object-contain"
             />
