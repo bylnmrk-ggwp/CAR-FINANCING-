@@ -131,11 +131,7 @@ export default function App() {
       <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center p-4">
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 max-w-sm w-full text-center space-y-6">
           <div className="flex justify-center">
-            <svg viewBox="0 0 160 40" className="h-12 w-auto" aria-label="MCARS">
-              <rect x="0" y="8" width="8" height="24" rx="2" fill="#DC2626" />
-              <text x="18" y="26" fontFamily="system-ui, sans-serif" fontSize="22" fontWeight="800" fill="#F5F5F5" letterSpacing="2">MCARS</text>
-              <text x="118" y="26" fontFamily="system-ui, sans-serif" fontSize="10" fontWeight="600" fill="#737373" letterSpacing="1.5">FINANCE</text>
-            </svg>
+            <img src="/assets/.aistudio/image/main.png" alt="MCARS" className="h-12 w-auto" />
           </div>
           <h1 className="text-xl font-bold uppercase tracking-wider">Sign In</h1>
           <p className="text-xs text-neutral-400">Enter your email to access the financing portal.</p>
@@ -191,11 +187,11 @@ export default function App() {
           
           {/* Logo brand label */}
           <div className="flex items-center gap-3">
-            <svg viewBox="0 0 170 40" className="h-10 sm:h-12 w-auto" aria-label="MCARS FINANCE">
-              <rect x="0" y="8" width="8" height="24" rx="2" fill="#DC2626" />
-              <text x="18" y="26" fontFamily="system-ui, sans-serif" fontSize="22" fontWeight="800" fill={isDark ? "#F5F5F5" : "#171717"} letterSpacing="2">MCARS</text>
-              <text x="118" y="26" fontFamily="system-ui, sans-serif" fontSize="10" fontWeight="600" fill={isDark ? "#737373" : "#A3A3A3"} letterSpacing="1.5">FINANCE</text>
-            </svg>
+            <img
+              src={isDark ? "/assets/.aistudio/image/white.png" : "/assets/.aistudio/image/main.png"}
+              alt="MCARS FINANCE"
+              className="h-10 sm:h-12 w-auto object-contain"
+            />
           </div>
 
           {/* Desktop Navigation Link buttons - touch targets of at least 44px achieved via py-2 sm:py-3 px-3 */}

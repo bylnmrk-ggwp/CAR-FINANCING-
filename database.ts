@@ -1,25 +1,36 @@
-import Database from 'better-sqlite3';
+import type DatabaseModule from 'better-sqlite3';
 import path from 'path';
+import { createRequire } from 'module';
 import { LoanApplication, SimulatedEmail, ApplicationFilters, PaginatedResponse, User, Tenant } from './src/types';
 import { getCache } from './src/cache';
+
+type Database = DatabaseModule.Database;
 
 const dbPath = process.env.VERCEL
   ? path.join('/tmp', 'mcars-finance.db')
   : path.join(process.cwd(), 'mcars-finance.db');
 
-let db: Database.Database;
+let db: Database;
+let initError: Error | null = null;
+
+function getDatabase(): Database {
+  if (initError) throw initError;
+  if (!db) throw new Error("Database not initialized");
+  return db;
+}
+
+const _require = createRequire(import.meta.url);
 try {
-  db = new Database(dbPath);
-} catch (err) {
+  const BetterSqlite3: typeof DatabaseModule = _require('better-sqlite3');
+  db = new BetterSqlite3(dbPath);
+  db.pragma('foreign_keys = ON');
+} catch (err: any) {
   console.error("Failed to initialize SQLite database:", err);
-  throw err;
+  initError = err;
 }
 
 const ALLOWED_APP_SORT = ['createdAt', 'statusUpdatedAt', 'applicantName', 'loanAmount', 'creditScore', 'status', 'carMake', 'carYear'];
 const ALLOWED_EMAIL_SORT = ['sentAt', 'subject', 'toEmail', 'read'];
-
-// Enable foreign keys
-db.pragma('foreign_keys = ON');
 
 // Initialize database schema
 export function initializeDatabase() {
