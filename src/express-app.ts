@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import Groq from "groq-sdk";
 import cors from "cors";
-import { LoanApplication, SimulatedEmail, StatusHistoryItem } from "./types";
+import { LoanApplication, SimulatedEmail, StatusHistoryItem, ApplicationFilters, AuthenticatedRequest } from "./types";
 import {
   initializeDatabase,
   getApplications,
@@ -14,7 +14,14 @@ import {
   getEmails,
   createEmail,
   clearEmails,
+  getUserByToken,
+  getTenantById,
+  getUsers,
 } from "../database";
+import db from "../database";
+import { JobQueue, getJobQueue } from "./job-queue";
+import { getCache } from "./cache";
+import { getWebhookManager } from "./webhooks";
 
 dotenv.config();
 
@@ -25,17 +32,66 @@ app.use(express.json({ limit: "20mb" }));
 
 initializeDatabase();
 
-function sendSimulatedEmail(to: string, subject: string, body: string) {
-  const newEmail: SimulatedEmail = {
+// Initialize async job queue
+const jobQueue = getJobQueue(db);
+
+// Initialize webhook manager
+const webhookManager = getWebhookManager(db);
+
+// Email delivery handler: processes send_email jobs in background
+jobQueue.processJobs('send_email', async (job) => {
+  const payload = JSON.parse(job.payload);
+  createEmail({
     id: `em-${Math.random().toString(36).substr(2, 9)}`,
-    to,
-    subject,
-    body,
+    to: payload.to,
+    subject: payload.subject,
+    body: payload.body,
     sentAt: new Date().toISOString(),
     read: false,
+  });
+  console.log(`[JOB QUEUE] Email sent to: ${payload.to} | subject: ${payload.subject}`);
+}, 500);
+
+// Document processing handler: validates uploaded documents in background
+jobQueue.processJobs('process_document', async (job) => {
+  const payload = JSON.parse(job.payload);
+  // Simulate async validation (OCR, virus scan, format check)
+  const isValid = payload.fileName && payload.fileName.length > 0;
+  if (!isValid) {
+    throw new Error(`Document ${payload.fileName || 'unknown'} failed validation`);
+  }
+  console.log(`[JOB QUEUE] Document processed: ${payload.fileName} (${payload.fileType}) for app ${payload.applicationId}`);
+}, 800);
+
+// RBAC auth middleware
+function authenticate(req: AuthenticatedRequest, res: any, next: any) {
+  const token = req.headers['x-auth-token'] as string;
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required. Provide x-auth-token header.' });
+  }
+  const user = getUserByToken(token);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid authentication token.' });
+  }
+  req.user = user;
+  next();
+}
+
+function requireRole(...roles: string[]) {
+  return (req: AuthenticatedRequest, res: any, next: any) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: `Access denied. Required role: ${roles.join(' or ')}.` });
+    }
+    next();
   };
-  createEmail(newEmail);
-  console.log(`[SIMULATED EMAIL SENT] to: ${to} | subject: ${subject}`);
+}
+
+function sendSimulatedEmail(to: string, subject: string, body: string) {
+  jobQueue.enqueue('send_email', { to, subject, body });
+  console.log(`[JOB QUEUE] Email enqueued to: ${to} | subject: ${subject}`);
 }
 
 let groqClient: Groq | null = null;
@@ -52,11 +108,27 @@ function getGroqClient(): Groq {
   return groqClient;
 }
 
-app.get("/api/applications", (_req, res) => {
-  res.json(getApplications());
+app.get("/api/applications", authenticate, (req: AuthenticatedRequest, res) => {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+  const sortBy = (req.query.sortBy as string) || 'createdAt';
+  const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
+
+  const filters: ApplicationFilters = {};
+  if (req.query.status) filters.status = req.query.status as string;
+  if (req.query.acquisitionMode) filters.acquisitionMode = req.query.acquisitionMode as string;
+  if (req.query.search) filters.search = req.query.search as string;
+
+  // RBAC: admins see all, others scoped to their tenant
+  const user = req.user!;
+  if (user.role !== 'admin') {
+    filters.tenantId = user.tenantId;
+  }
+
+  res.json(getApplications(page, limit, sortBy, sortOrder, filters));
 });
 
-app.post("/api/applications", (req, res) => {
+app.post("/api/applications", authenticate, (req: AuthenticatedRequest, res) => {
   const {
     applicantName,
     applicantEmail,
@@ -69,7 +141,6 @@ app.post("/api/applications", (req, res) => {
     interestRate,
     monthlyPayment,
     creditScore,
-    biometricSecured,
     acquisitionMode
   } = req.body;
 
@@ -98,7 +169,8 @@ app.post("/api/applications", (req, res) => {
     status: 'DOCUMENTS_PENDING',
     statusUpdatedAt: timestamp,
     createdAt: timestamp,
-    biometricSecured: !!biometricSecured
+    tenantId: req.user!.tenantId,
+    assignedUnderwriterId: req.user!.role === 'underwriter' || req.user!.role === 'admin' ? req.user!.id : undefined
   });
 
   createHistoryItem({
@@ -126,7 +198,7 @@ app.post("/api/applications", (req, res) => {
   res.status(201).json(newApp);
 });
 
-app.post("/api/applications/:id/documents", (req, res) => {
+app.post("/api/applications/:id/documents", authenticate, (req: AuthenticatedRequest, res) => {
   const { id } = req.params;
   const { name, type, size } = req.body;
 
@@ -134,14 +206,28 @@ app.post("/api/applications/:id/documents", (req, res) => {
   if (!appItem) {
     return res.status(404).json({ error: "Application not found." });
   }
+  // RBAC tenant isolation
+  const user = req.user!;
+  if (user.role !== 'admin' && (appItem as any).tenantId !== user.tenantId) {
+    return res.status(403).json({ error: "Access denied to this application." });
+  }
 
+  const docId = `doc-${Math.random().toString(36).substr(2, 9)}`;
   createDocument({
-    id: `doc-${Math.random().toString(36).substr(2, 9)}`,
+    id: docId,
     applicationId: id,
     name: name || "document.pdf",
     type: type || "ID",
     size: size || 1024 * 102,
     uploadedAt: new Date().toISOString()
+  });
+
+  // Enqueue document processing (validation, virus scan, OCR — async)
+  jobQueue.enqueue('process_document', {
+    documentId: docId,
+    applicationId: id,
+    fileName: name || "document.pdf",
+    fileType: type || "ID"
   });
 
   if (appItem.status === 'DOCUMENTS_PENDING') {
@@ -157,6 +243,14 @@ app.post("/api/applications/:id/documents", (req, res) => {
       status: 'UNDER_REVIEW',
       timestamp: new Date().toISOString(),
       description: `Verification paper '${name || 'document.pdf'}' uploaded successfully. Status upgraded to Under Review.`
+    });
+
+    // Fire webhook: document uploaded, status changed
+    webhookManager.publish('application.document_uploaded', {
+      applicationId: id,
+      documentId: docId,
+      fileName: name || 'document.pdf',
+      newStatus: 'UNDER_REVIEW'
     });
 
     sendSimulatedEmail(
@@ -178,11 +272,15 @@ app.post("/api/applications/:id/documents", (req, res) => {
   res.json(getApplicationById(id)!);
 });
 
-app.post("/api/applications/:id/advance", (req, res) => {
+app.post("/api/applications/:id/advance", authenticate, requireRole('admin', 'underwriter'), (req: AuthenticatedRequest, res) => {
   const { id } = req.params;
   const appItem = getApplicationById(id);
   if (!appItem) {
     return res.status(404).json({ error: "Application not found." });
+  }
+  const user = req.user!;
+  if (user.role !== 'admin' && (appItem as any).tenantId !== user.tenantId) {
+    return res.status(403).json({ error: "Access denied to this application." });
   }
 
   const currentStatus = appItem.status;
@@ -248,44 +346,85 @@ app.post("/api/applications/:id/advance", (req, res) => {
     );
   }
 
-  res.json(getApplicationById(id)!);
-});
-
-app.post("/api/applications/:id/biometrics", (req, res) => {
-  const { id } = req.params;
-  const { enabled } = req.body;
-
-  const appItem = getApplicationById(id);
-  if (!appItem) {
-    return res.status(404).json({ error: "Application not found." });
-  }
-
-  updateApplication(id, {
-    biometricSecured: !!enabled
-  });
-
-  const statusDesc = enabled
-    ? "Biometric authentication (FaceID/TouchID) linked securely to this loan profile."
-    : "Biometric lock deactivated for this loan profile.";
-
-  createHistoryItem({
-    id: `hist-${Math.floor(10000 + Math.random() * 90000)}`,
+  // Fire webhook: application status changed
+  webhookManager.publish('application.status_changed', {
     applicationId: id,
-    status: appItem.status,
-    timestamp: new Date().toISOString(),
-    description: statusDesc
+    previousStatus: currentStatus,
+    newStatus: nextStatus,
+    description: textDesc
   });
 
   res.json(getApplicationById(id)!);
 });
 
-app.get("/api/emails", (_req, res) => {
-  res.json(getEmails());
+app.get("/api/emails", authenticate, (req: AuthenticatedRequest, res) => {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 100));
+  const sortBy = (req.query.sortBy as string) || 'sentAt';
+  const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
+
+  res.json(getEmails(page, limit, sortBy, sortOrder));
 });
 
-app.post("/api/emails/clear", (_req, res) => {
+app.post("/api/emails/clear", authenticate, requireRole('admin'), (_req, res) => {
   clearEmails();
   res.json({ success: true });
+});
+
+// Job queue monitoring endpoints (admin only)
+app.get("/api/queue", authenticate, requireRole('admin'), (_req, res) => {
+  res.json({
+    pending: jobQueue.getPendingCount(),
+    pendingEmails: jobQueue.getPendingCount('send_email'),
+    failed: jobQueue.getFailedJobs(),
+    recent: jobQueue.getRecentJobs(10)
+  });
+});
+
+// Cache stats
+app.get("/api/cache", authenticate, requireRole('admin'), (_req, res) => {
+  res.json(getCache().stats());
+});
+
+// Webhook management endpoints (admin only)
+app.get("/api/webhooks", authenticate, requireRole('admin'), (_req: AuthenticatedRequest, res) => {
+  res.json(webhookManager.getAll());
+});
+
+app.post("/api/webhooks", authenticate, requireRole('admin'), (req: AuthenticatedRequest, res) => {
+  const { url, events } = req.body;
+  if (!url || !events || !Array.isArray(events) || events.length === 0) {
+    return res.status(400).json({ error: "url and events[] are required." });
+  }
+  const webhook = webhookManager.register(url, events);
+  res.status(201).json(webhook);
+});
+
+app.delete("/api/webhooks/:id", authenticate, requireRole('admin'), (req: AuthenticatedRequest, res) => {
+  webhookManager.unregister(req.params.id);
+  res.json({ success: true });
+});
+
+// Public auth endpoint
+app.post("/api/auth/login", (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required." });
+  }
+  const user = getUserByToken(email); // allow token-based login too
+  const userByEmail = getUsers().find(u => u.email === email);
+  const found = user || userByEmail || null;
+  if (!found) {
+    return res.status(401).json({ error: "User not found for this email." });
+  }
+  const tenant = getTenantById(found.tenantId);
+  res.json({ user: found, tenant });
+});
+
+// Current user / token info
+app.get("/api/auth/me", authenticate, (req: AuthenticatedRequest, res) => {
+  const tenant = getTenantById(req.user!.tenantId);
+  res.json({ user: req.user, tenant });
 });
 
 app.post("/api/counselor", async (req, res) => {

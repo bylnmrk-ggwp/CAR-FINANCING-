@@ -38,7 +38,6 @@ export const INITIAL_APPLICATIONS: LoanApplication[] = [
     status: 'UNDER_REVIEW',
     statusUpdatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
     createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-    biometricSecured: true,
     documents: [
       { id: 'doc-1', name: 'Drivers_License_Sarah.png', type: 'ID', size: 1420500, uploadedAt: new Date(Date.now() - 3600000 * 23).toISOString() },
       { id: 'doc-2', name: 'Paystub_May2026.pdf', type: 'INCOME', size: 2310200, uploadedAt: new Date(Date.now() - 3600000 * 23).toISOString() },
@@ -65,7 +64,6 @@ export const INITIAL_APPLICATIONS: LoanApplication[] = [
     status: 'DOCUMENTS_PENDING',
     statusUpdatedAt: new Date(Date.now() - 3600000 * 1).toISOString(),
     createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    biometricSecured: false,
     documents: [],
     history: [
       { id: 'hist-11', status: 'SUBMITTED', timestamp: new Date(Date.now() - 3600000 * 4).toISOString(), description: 'Loan application submitted for pre-owned BMW M4 Competition.' },

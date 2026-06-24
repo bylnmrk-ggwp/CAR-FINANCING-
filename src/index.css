@@ -1,13 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
+@custom-variant light (&:where(.light, .light *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-/* Custom scrollbars for the premium dark theme */
+body {
+  background-color: #030303;
+  color: #f5f5f5;
+  font-family: var(--font-sans);
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -26,8 +33,20 @@
   background: #dc2626;
 }
 
-body {
-  background-color: #030303;
-  color: #f5f5f5;
-  font-family: var(--font-sans);
+.light body,
+body.light {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }

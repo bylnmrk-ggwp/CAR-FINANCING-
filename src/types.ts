@@ -16,7 +16,6 @@ export interface LoanApplication {
   statusUpdatedAt: string;
   createdAt: string;
   documents: UploadedDocument[];
-  biometricSecured: boolean;
   history: StatusHistoryItem[];
 }
 
@@ -58,4 +57,46 @@ export interface SimulatedEmail {
   body: string;
   sentAt: string;
   read: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface ApplicationFilters {
+  status?: string;
+  acquisitionMode?: string;
+  search?: string;
+  tenantId?: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'underwriter' | 'customer';
+  tenantId: string;
+  token: string;
+  createdAt: string;
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface AuthenticatedRequest {
+  user?: User;
+  query: any;
+  body: any;
+  headers: any;
+  params: any;
+  get: (header: string) => string | undefined;
 }

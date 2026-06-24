@@ -184,11 +184,11 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 text-white">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:grid md:grid-cols-12 md:max-h-[640px]">
+    <div className="max-w-4xl mx-auto px-4 py-8 text-white light:text-neutral-900">
+      <div className="bg-neutral-900 light:bg-white border border-neutral-800 light:border-neutral-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:grid md:grid-cols-12 md:max-h-[640px]">
         
         {/* Left column: Quick hints and system constraints */}
-        <div className="p-6 md:col-span-4 bg-neutral-950 border-r border-neutral-800 flex flex-col justify-between text-left space-y-6">
+        <div className="p-6 md:col-span-4 bg-neutral-950 light:bg-neutral-100 border-r border-neutral-800 light:border-neutral-200 flex flex-col justify-between text-left space-y-6">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-red-500">
               <BrainCircuit className="w-5 h-5" />
@@ -210,7 +210,7 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
                 <button
                   key={idx}
                   onClick={() => handleQuickQuestion(q)}
-                  className="w-full text-left text-[11px] p-2 bg-neutral-900/50 hover:bg-red-950/20 border border-neutral-850 hover:border-red-500/10 text-neutral-300 hover:text-white rounded-lg transition"
+                  className="w-full text-left text-[11px] p-2 bg-neutral-900/50 light:bg-neutral-100 hover:bg-red-950/20 light:hover:bg-red-100 border border-neutral-850 light:border-neutral-200 hover:border-red-500/10 light:hover:border-red-300 text-neutral-300 light:text-neutral-700 hover:text-white light:hover:text-red-900 rounded-lg transition"
                 >
                   {q}
                 </button>
@@ -218,7 +218,7 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
             </div>
           </div>
 
-          <div className="bg-red-950/20 border border-red-500/10 p-3.5 rounded-xl">
+          <div className="bg-red-950/20 light:bg-red-100 border border-red-500/10 p-3.5 rounded-xl">
             <span className="text-[10px] uppercase tracking-wider font-bold text-red-500 block mb-1">Core active context</span>
             {activeApplicationContext ? (
               <div className="font-mono text-[9px] text-neutral-400 space-y-0.5">
@@ -234,14 +234,14 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
         </div>
 
         {/* Right column: Interactive Chat Terminal */}
-        <div id="ai-chat-box" className="md:col-span-8 flex flex-col justify-between h-[450px] md:h-[640px] bg-neutral-900">
+        <div id="ai-chat-box" className="md:col-span-8 flex flex-col justify-between h-[450px] md:h-[640px] bg-neutral-900 light:bg-neutral-100">
           
           {/* Header */}
-          <div className="bg-neutral-900/40 p-4 border-b border-neutral-800 flex justify-between items-center text-left">
+          <div className="bg-neutral-900/40 light:bg-neutral-200 p-4 border-b border-neutral-800 light:border-neutral-200 flex justify-between items-center text-left">
             <div className="flex items-center gap-2.5">
               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
               <div>
-                <h4 className="text-sm font-semibold text-white">Underwriter AI Consultant</h4>
+                <h4 className="text-sm font-semibold text-white light:text-neutral-900">Underwriter AI Consultant</h4>
                 <p className="text-[10px] text-neutral-400 font-mono">llama-3.3-70b-versatile : Groq Inference</p>
               </div>
             </div>
@@ -259,8 +259,8 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
                   {/* Message bubble */}
                   <div className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed text-left ${
                     isUser 
-                      ? 'bg-red-600 text-white rounded-tr-none shadow-md shadow-red-950/20' 
-                      : 'bg-neutral-950 border border-neutral-850 text-neutral-100 rounded-tl-none'
+                      ? 'bg-red-600 text-white rounded-tr-none shadow-md shadow-red-950/20 light:bg-red-500 light:text-neutral-900' 
+                      : 'bg-neutral-950 border border-neutral-850 text-neutral-100 light:bg-neutral-100 light:border-neutral-200 light:text-neutral-900 rounded-tl-none'
                   }`}>
                     {/* Format simple markdown inside helper */}
                     <div className="space-y-2 prose-invert select-none">
@@ -278,12 +278,12 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
 
                   {/* Chain of thought rendering */}
                   {!isUser && m.thinking && (
-                    <details className="w-[85%] bg-neutral-950/40 border border-neutral-800/80 rounded-xl overflow-hidden group">
-                      <summary className="cursor-pointer text-[10px] font-semibold text-neutral-400 hover:text-red-400 p-2.5 select-none flex items-center gap-1.5 bg-neutral-950">
+                    <details className="w-[85%] bg-neutral-950/40 light:bg-neutral-100 border border-neutral-800/80 light:border-neutral-200 rounded-xl overflow-hidden group">
+                      <summary className="cursor-pointer text-[10px] font-semibold text-neutral-400 light:text-neutral-600 hover:text-red-400 light:hover:text-red-600 p-2.5 select-none flex items-center gap-1.5 bg-neutral-950 light:bg-neutral-100">
                         <BrainCircuit className="w-3.5 h-3.5 text-red-500 animate-pulse group-open:rotate-18 transition-transform" />
                         <span>Inspect High-Thinking Deep Reasoning Process ({m.thinking.substring(0, 40)}...)</span>
                       </summary>
-                      <div className="p-3 border-t border-neutral-900 bg-neutral-950/80 font-mono text-[10px] text-red-100/70 whitespace-pre-line text-left leading-relaxed">
+                      <div className="p-3 border-t border-neutral-900 light:border-neutral-200 bg-neutral-950/80 light:bg-neutral-50 font-mono text-[10px] text-red-100/70 light:text-neutral-700 whitespace-pre-line text-left leading-relaxed">
                         {m.thinking}
                       </div>
                     </details>
@@ -298,7 +298,7 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
 
             {loading && (
               <div className="flex flex-col items-start space-y-2">
-                <div className="bg-neutral-950 border border-neutral-850 rounded-2xl rounded-tl-none p-4 max-w-[85%] animate-pulse text-left">
+                <div className="bg-neutral-950 light:bg-neutral-100 border border-neutral-850 light:border-neutral-200 rounded-2xl rounded-tl-none p-4 max-w-[85%] animate-pulse text-left">
                   <div className="flex items-center gap-2 text-red-400 mb-2">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     <span className="text-[10px] font-mono leading-none">AI is analyzing finance algorithms...</span>
@@ -310,7 +310,7 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
             )}
 
             {errorText && (
-              <div className="bg-red-950/20 border border-red-500/20 p-3 rounded-xl flex items-center gap-2 text-red-400 text-xs">
+              <div className="bg-red-950/20 light:bg-red-100 border border-red-500/20 light:border-red-300 p-3 rounded-xl flex items-center gap-2 text-red-400 light:text-red-700 text-xs">
                 <AlertCircle className="w-4 h-4 text-red-500" />
                 <span>{errorText}</span>
               </div>
@@ -320,14 +320,14 @@ export default function AICounselor({ activeApplicationContext }: AICounselorPro
           </div>
 
           {/* Form submit bar */}
-          <form onSubmit={handleSendMessage} className="p-3 sm:p-4 border-t border-neutral-800 bg-neutral-950/40 flex gap-2">
+          <form onSubmit={handleSendMessage} className="p-3 sm:p-4 border-t border-neutral-800 light:border-neutral-200 bg-neutral-950/40 light:bg-neutral-100 flex gap-2">
             <input
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               disabled={loading}
               placeholder="Ask our underwriters counselor..."
-              className="grow bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+              className="grow bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-xl px-4 py-3 text-xs text-white light:text-neutral-900 focus:outline-none focus:ring-1 focus:ring-red-500"
             />
             <button
               type="submit"

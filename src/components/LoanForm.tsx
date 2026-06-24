@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { CAR_MAKES, CREDIT_TIERS } from '../data';
 import { 
   User, Mail, ArrowRight, ArrowLeft, ShieldAlert, CheckCircle, 
-  UploadCloud, FileText, AlertCircle, Fingerprint, RefreshCw, Smartphone
+  UploadCloud, FileText, AlertCircle, RefreshCw
 } from 'lucide-react';
 
 interface LoanFormProps {
@@ -50,10 +50,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Biometric states
-  const [biometricEnabled, setBiometricEnabled] = useState<boolean>(false);
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-  const [scanComplete, setScanComplete] = useState<boolean>(false);
+
 
   // Double check calculated rate and monthly payments depending on selected acquisition strategy
   const activeTier = CREDIT_TIERS.find(t => creditTier >= t.minScore) || CREDIT_TIERS[CREDIT_TIERS.length - 1];
@@ -82,17 +79,6 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
     return (loanAmount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
   };
   const estimatedMonthly = calculateOnTheFlyPayment();
-
-  // Handle fake scanning for biometrics
-  const startBiometricEnrollment = () => {
-    setIsScanning(true);
-    setScanComplete(false);
-    setTimeout(() => {
-      setIsScanning(false);
-      setScanComplete(true);
-      setBiometricEnabled(true);
-    }, 2000);
-  };
 
   // Drag and Drop files helpers
   const handleDragOver = (e: React.DragEvent) => {
@@ -163,7 +149,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
           interestRate,
           monthlyPayment: estimatedMonthly,
           creditScore: creditTier,
-          biometricSecured: biometricEnabled,
+
           acquisitionMode
         })
       });
@@ -203,7 +189,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* Step Header Indicator */}
-      <div className="mb-8 bg-neutral-900/60 border border-neutral-800 rounded-2xl p-4 sm:p-6 text-white text-center flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="mb-8 bg-neutral-900/60 light:bg-neutral-100 border border-neutral-800 light:border-neutral-200 rounded-2xl p-4 sm:p-6 text-white light:text-neutral-900 text-center flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-xl font-bold font-display tracking-tight flex items-center justify-center md:justify-start gap-2">
             <span className="text-red-500 font-mono">STEP {step} / 4</span>
@@ -224,7 +210,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
         </div>
         
         {/* Progress indicators dots */}
-        <div className="flex items-center gap-1.5 bg-neutral-950 p-2 border border-neutral-800 rounded-xl">
+        <div className="flex items-center gap-1.5 bg-neutral-950 light:bg-neutral-100 p-2 border border-neutral-800 light:border-neutral-300 rounded-xl">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -239,7 +225,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
       </div>
 
       {/* Main Form Box */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl p-6 sm:p-8 text-white relative">
+      <div className="bg-neutral-900 light:bg-white border border-neutral-800 light:border-neutral-200 rounded-2xl shadow-2xl p-6 sm:p-8 text-white light:text-neutral-900 relative">
         {errorMessage && (
           <div className="mb-6 bg-red-950/40 border border-red-500/30 p-4 rounded-xl flex items-start gap-3 text-red-200 text-xs text-left">
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
@@ -262,12 +248,12 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">Legal Representative Full Name</label>
+                <label className="block text-xs font-semibold text-neutral-400 light:text-neutral-500 uppercase tracking-wider mb-2">Legal Representative Full Name</label>
                 <input
                   type="text"
                   value={applicantName}
                   onChange={(e) => setApplicantName(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
+                  className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-3 text-sm text-white light:text-neutral-900 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
                   placeholder="e.g. John Doe"
                 />
               </div>
@@ -278,7 +264,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                   type="email"
                   value={applicantEmail}
                   onChange={(e) => setApplicantEmail(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
+                  className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-3 text-sm text-white light:text-neutral-900 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
                   placeholder="name@email.com"
                 />
                 <span className="text-[10px] text-neutral-500 mt-1 block">Simulation updates & approval notifications will deliver here.</span>
@@ -292,7 +278,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                     type="number"
                     value={annualIncome}
                     onChange={(e) => setAnnualIncome(Number(e.target.value))}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 pl-7 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
+                    className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-3 pl-7 text-sm text-white light:text-neutral-900 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
                   />
                 </div>
               </div>
@@ -303,15 +289,15 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                   type="text"
                   value={employer}
                   onChange={(e) => setEmployer(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
+                  className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-3 text-sm text-white light:text-neutral-900 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
                   placeholder="e.g. Acme Corp"
                 />
               </div>
             </div>
 
-            <div className="bg-neutral-950 p-4 border border-neutral-800/80 rounded-xl flex items-start gap-3 mt-4">
+            <div className="bg-neutral-950 light:bg-neutral-100 p-4 border border-neutral-800/80 light:border-neutral-200 rounded-xl flex items-start gap-3 mt-4">
               <ShieldAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-neutral-400 leading-relaxed">
+              <p className="text-[11px] text-neutral-400 light:text-neutral-600 leading-relaxed">
                 By clicking proceed, you authorize the evaluation of financial details to structure custom loan brackets. This action is protected by a fully simulated SSL connection inside the portal.
               </p>
             </div>
@@ -327,16 +313,16 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
             </div>
 
             {/* Acquisition Switcher widget */}
-            <div className="bg-neutral-950 p-4 border border-neutral-850 rounded-xl space-y-3">
-              <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider">Required Acquisition Option</label>
-              <div className="grid grid-cols-3 gap-1.5 bg-neutral-900 p-1 rounded-xl border border-neutral-800/80">
+            <div className="bg-neutral-950 light:bg-neutral-100 p-4 border border-neutral-850 light:border-neutral-200 rounded-xl space-y-3">
+              <label className="block text-xs font-semibold text-neutral-400 light:text-neutral-600 uppercase tracking-wider">Required Acquisition Option</label>
+              <div className="grid grid-cols-3 gap-1.5 bg-neutral-900 light:bg-neutral-200 p-1 rounded-xl border border-neutral-800/80 light:border-neutral-300">
                 <button
                   type="button"
                   onClick={() => setAcquisitionMode('FINANCING')}
                   className={`py-2 px-1 text-xs font-bold uppercase rounded-lg transition-all ${
                     acquisitionMode === 'FINANCING'
-                      ? 'bg-red-650 text-white shadow-md'
-                      : 'text-neutral-400 hover:text-neutral-200'
+                      ? 'bg-red-600 text-white shadow-md light:bg-red-500 light:text-neutral-900'
+                      : 'text-neutral-400 hover:text-neutral-200 light:text-neutral-600 light:hover:text-neutral-900'
                   }`}
                 >
                   🚘 Financing
@@ -346,8 +332,8 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                   onClick={() => setAcquisitionMode('RENT_TO_OWN')}
                   className={`py-2 px-1 text-xs font-bold uppercase rounded-lg transition-all ${
                     acquisitionMode === 'RENT_TO_OWN'
-                      ? 'bg-red-650 text-white shadow-md'
-                      : 'text-neutral-400 hover:text-neutral-200'
+                      ? 'bg-red-600 text-white shadow-md light:bg-red-500 light:text-neutral-900'
+                      : 'text-neutral-400 hover:text-neutral-200 light:text-neutral-600 light:hover:text-neutral-900'
                   }`}
                 >
                   🔑 Rent-to-Own
@@ -357,8 +343,8 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                   onClick={() => setAcquisitionMode('CASH')}
                   className={`py-2 px-1 text-xs font-bold uppercase rounded-lg transition-all ${
                     acquisitionMode === 'CASH'
-                      ? 'bg-red-650 text-white shadow-md'
-                      : 'text-neutral-400 hover:text-neutral-200'
+                      ? 'bg-red-600 text-white shadow-md light:bg-red-500 light:text-neutral-900'
+                      : 'text-neutral-400 hover:text-neutral-200 light:text-neutral-600 light:hover:text-neutral-900'
                   }`}
                 >
                   💰 Cash Buyout
@@ -377,7 +363,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                 <select
                   value={carMake}
                   onChange={(e) => setCarMake(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
+                  className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
                 >
                   {CAR_MAKES.map(m => (
                     <option key={m.name} value={m.name}>{m.logo} {m.name}</option>
@@ -391,7 +377,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                   type="text"
                   value={carModel}
                   onChange={(e) => setCarModel(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
+                  className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-2.5 text-sm text-white light:text-neutral-900 focus:outline-none focus:ring-1 focus:ring-red-500 font-medium"
                 />
               </div>
 
@@ -400,7 +386,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                 <select
                   value={carYear}
                   onChange={(e) => setCarYear(Number(e.target.value))}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 font-medium font-mono"
+                  className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 font-medium font-mono"
                 >
                   {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map(y => (
                     <option key={y} value={y}>{y}</option>
@@ -409,7 +395,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
               </div>
             </div>
 
-            <hr className="border-neutral-800/80 my-4" />
+            <hr className="border-neutral-800/80 light:border-neutral-200 my-4" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -418,7 +404,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                   type="number"
                   value={price}
                   onChange={(e) => setPrice(Number(e.target.value))}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-mono font-medium"
+                  className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-2.5 text-sm text-white light:text-neutral-900 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono font-medium"
                 />
               </div>
 
@@ -428,7 +414,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                   type="number"
                   value={downPayment}
                   onChange={(e) => setDownPayment(Math.min(price, Number(e.target.value)))}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500 font-mono font-medium"
+                  className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-2.5 text-sm text-white light:text-neutral-900 focus:outline-none focus:ring-1 focus:ring-red-500 font-mono font-medium"
                 />
               </div>
 
@@ -437,7 +423,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                 <select
                   value={termMonths}
                   onChange={(e) => setTermMonths(Number(e.target.value))}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 font-mono font-medium"
+                  className="w-full bg-neutral-950 light:bg-white border border-neutral-800 light:border-neutral-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 font-mono font-medium"
                 >
                   {[24, 30, 36, 48, 60, 72, 84].map(m => (
                     <option key={m} value={m}>{m} Months</option>
@@ -447,7 +433,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
             </div>
 
             {/* Live terms recap banner depending on strategies */}
-            <div className="bg-gradient-to-r from-red-950/20 to-neutral-950 border border-red-500/10 rounded-xl p-5 mt-4 grid grid-cols-3 gap-4">
+            <div className="bg-gradient-to-r from-red-950/20 to-neutral-950 light:from-red-100 light:to-neutral-100 border border-red-500/10 light:border-red-200 rounded-xl p-5 mt-4 grid grid-cols-3 gap-4">
               <div className="text-center md:text-left">
                 <span className="text-[10px] text-neutral-400 uppercase tracking-widest block font-sans font-semibold mb-1">
                   {acquisitionMode === 'CASH' ? 'Cash Discount Rate' : 'Equivalent Rate'}
@@ -460,7 +446,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                 <span className="text-[10px] text-neutral-400 uppercase tracking-widest block font-sans font-semibold mb-1">
                   {acquisitionMode === 'CASH' ? 'Total Buyout Due' : 'Financed Principal'}
                 </span>
-                <span className="text-lg sm:text-2xl font-bold font-mono text-white">
+                <span className="text-lg sm:text-2xl font-bold font-mono text-white light:text-neutral-900">
                   ₱{(acquisitionMode === 'CASH' ? price * 0.95 : loanAmount).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </span>
               </div>
@@ -479,14 +465,14 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
         {/* STEP 3: SECURE DOCUMENT UPLOAD */}
         {step === 3 && (
           <div className="space-y-6">
-            <div className="border-b border-neutral-800 pb-4 mb-4 flex justify-between items-center">
+            <div className="border-b border-neutral-800 light:border-neutral-200 pb-4 mb-4 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-semibold font-display tracking-wide flex items-center gap-2">
                   <UploadCloud className="w-5 h-5 text-red-500" /> Secure Verification Vault
                 </h3>
-                <p className="text-xs text-neutral-400">Upload standard verification documents now to jump Directly to Under Review</p>
+                <p className="text-xs text-neutral-400 light:text-neutral-600">Upload standard verification documents now to jump Directly to Under Review</p>
               </div>
-              <span className="text-[10px] text-red-500 border border-red-500/30 px-2 py-0.5 rounded-full uppercase tracking-wider font-mono bg-red-950/20 font-bold">Encrypted</span>
+              <span className="text-[10px] text-red-500 border border-red-500/30 light:border-red-300 px-2 py-0.5 rounded-full uppercase tracking-wider font-mono bg-red-950/20 light:bg-red-100 font-bold">Encrypted</span>
             </div>
 
             {/* Drag & Drop Area */}
@@ -498,7 +484,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
               className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
                 isDragging 
                   ? 'border-red-500 bg-red-950/10' 
-                  : 'border-neutral-800 bg-neutral-950/40 hover:border-neutral-700'
+                  : 'border-neutral-800 light:border-neutral-300 bg-neutral-950/40 light:bg-neutral-100 hover:border-neutral-700 light:hover:border-neutral-400'
               }`}
             >
               <input 
@@ -517,16 +503,16 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
             {/* Uploaded File List */}
             {uploadedFiles.length > 0 ? (
               <div className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Selected files to submit ({uploadedFiles.length})</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 light:text-neutral-600">Selected files to submit ({uploadedFiles.length})</span>
                 {uploadedFiles.map((file, idx) => (
-                  <div key={idx} className="flex justify-between items-center bg-neutral-950 border border-neutral-820 rounded-xl p-3">
+                  <div key={idx} className="flex justify-between items-center bg-neutral-950 light:bg-neutral-100 border border-neutral-820 light:border-neutral-200 rounded-xl p-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-neutral-900 border border-red-500/20 text-red-400 rounded-lg">
+                      <div className="p-2 bg-neutral-900 light:bg-neutral-200 border border-red-500/20 text-red-400 rounded-lg">
                         <FileText className="w-4 h-4" />
                       </div>
                       <div className="text-left">
-                        <span className="text-xs font-medium font-mono text-white block max-w-[200px] truncate sm:max-w-xs">{file.name}</span>
-                        <span className="text-[10px] text-neutral-400 font-mono">{(file.size / (1024 * 1024)).toFixed(2)} MB • {file.type} Type</span>
+                        <span className="text-xs font-medium font-mono text-white light:text-neutral-900 block max-w-[200px] truncate sm:max-w-xs">{file.name}</span>
+                        <span className="text-[10px] text-neutral-400 light:text-neutral-600 font-mono">{(file.size / (1024 * 1024)).toFixed(2)} MB • {file.type} Type</span>
                       </div>
                     </div>
                     <button
@@ -534,7 +520,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                         e.stopPropagation();
                         removeFile(idx);
                       }}
-                      className="text-xs text-neutral-400 hover:text-red-500 border border-neutral-800 hover:border-red-800 px-2 py-1 rounded"
+                      className="text-xs text-neutral-400 light:text-neutral-600 hover:text-red-500 light:hover:text-red-600 border border-neutral-800 light:border-neutral-300 hover:border-red-800 light:hover:border-red-400 px-2 py-1 rounded"
                     >
                       Delete
                     </button>
@@ -542,92 +528,21 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
                 ))}
               </div>
             ) : (
-              <div className="bg-neutral-950 p-4 border border-neutral-800/80 rounded-xl flex items-center gap-3 text-neutral-400 text-xs">
-                <AlertCircle className="w-5 h-5 text-neutral-500 shrink-0" />
+              <div className="bg-neutral-950 light:bg-neutral-100 p-4 border border-neutral-800/80 light:border-neutral-200 rounded-xl flex items-center gap-3 text-neutral-400 light:text-neutral-600 text-xs">
+                <AlertCircle className="w-5 h-5 text-neutral-500 light:text-neutral-400 shrink-0" />
                 <span>You can proceed without uploads now, but you will need to submit documentation on your dashboard to unlock custom underwriters screening.</span>
               </div>
             )}
           </div>
         )}
 
-        {/* STEP 4: BIOMETRIC AUTH SYSTEM */}
-        {step === 4 && (
-          <div className="space-y-6">
-            <div className="border-b border-neutral-800 pb-4 mb-4">
-              <h3 className="text-lg font-semibold font-display tracking-wide flex items-center gap-2">
-                <Smartphone className="w-5 h-5 text-red-500" /> Biometric Identity Access Securement
-              </h3>
-              <p className="text-xs text-neutral-400">Activate biometric tokens (FaceID/TouchID) to instantly log in or lock loan configuration</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              {/* Simulator interactive area */}
-              <div className="md:col-span-5 bg-neutral-950 border border-neutral-800 rounded-2xl p-6 text-center flex flex-col items-center justify-center min-h-[220px]">
-                <Fingerprint className={`w-16 h-16 mb-4 transition-all ${
-                  isScanning 
-                    ? 'text-red-500 animate-pulse scale-110' 
-                    : scanComplete 
-                      ? 'text-green-500 scale-105' 
-                      : 'text-neutral-500 hover:text-red-400'
-                }`} />
-                
-                {isScanning ? (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-red-400 flex items-center justify-center gap-1.5">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Enrolling Biometrics...
-                    </p>
-                    <p className="text-[10px] text-neutral-500">Stand by, verifying client key parameters</p>
-                  </div>
-                ) : scanComplete ? (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-green-500 flex items-center justify-center gap-1">
-                      <CheckCircle className="w-3.5 h-3.5" /> Key Secured Successfully!
-                    </p>
-                    <p className="text-[10px] text-neutral-400">Biometric fingerprint linked to application</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-xs font-semibold text-neutral-300">Biometric Terminal</p>
-                    <button
-                      onClick={startBiometricEnrollment}
-                      className="bg-neutral-900 hover:bg-neutral-800 text-xs border border-neutral-800 text-neutral-300 py-1.5 px-3 rounded-lg flex items-center gap-1 mx-auto"
-                    >
-                      Initialize Scan Test
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Informational area */}
-              <div className="md:col-span-7 text-left space-y-4">
-                <div className="flex gap-3">
-                  <input
-                    type="checkbox"
-                    id="bio-check"
-                    checked={biometricEnabled}
-                    onChange={(e) => setBiometricEnabled(e.target.checked)}
-                    className="w-4 h-4 rounded accent-red-500 cursor-pointer mt-0.5"
-                  />
-                  <label htmlFor="bio-check" className="text-xs font-semibold text-white cursor-pointer block select-none">
-                    Require biometric authorization on login or underwriting contract releases.
-                  </label>
-                </div>
-                
-                <p className="text-xs text-neutral-400 leading-relaxed bg-neutral-950 p-3 border border-neutral-800 rounded-lg">
-                  Applying WebAuthn simulation parameters translates physical hardware fingerprint tokens directly into client credentials. Your original biometric files never navigate outside this custom portal environment.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Form Footer Controls */}
-        <div className="mt-8 pt-6 border-t border-neutral-850 flex justify-between gap-4 font-display">
+        <div className="mt-8 pt-6 border-t border-neutral-850 light:border-neutral-200 flex justify-between gap-4 font-display">
           {step > 1 ? (
             <button
               onClick={() => setStep(prev => prev - 1)}
               disabled={submitting}
-              className="px-4 py-2 bg-neutral-950 hover:bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-300 text-xs font-medium tracking-wider flex items-center gap-1.5"
+              className="px-4 py-2 bg-neutral-950 light:bg-neutral-100 hover:bg-neutral-900 light:hover:bg-neutral-200 border border-neutral-800 light:border-neutral-300 rounded-xl text-neutral-300 light:text-neutral-700 text-xs font-medium tracking-wider flex items-center gap-1.5"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back
             </button>
@@ -635,7 +550,7 @@ export default function LoanForm({ preFilledConfig, onSubmitSuccess }: LoanFormP
             <div /> // Placeholder
           )}
 
-          {step < 4 ? (
+          {step < 3 ? (
             <button
               onClick={() => setStep(prev => prev + 1)}
               className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 ml-auto"
