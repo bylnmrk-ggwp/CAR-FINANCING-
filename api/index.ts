@@ -1,10 +1,10 @@
-import app from "../src/express-app";
-
-export default function handler(req: any, res: any) {
+export default async function handler(req: any, res: any) {
   try {
+    const mod = await import("../src/express-app");
+    const app = mod.default;
     app(req, res);
   } catch (err: any) {
     console.error("handler error:", err?.message || err);
-    try { res.statusCode = 500; res.end(JSON.stringify({ error: err?.message || String(err) })); } catch {}
+    try { res.statusCode = 500; res.end("err: " + (err?.message || String(err))); } catch {}
   }
 }

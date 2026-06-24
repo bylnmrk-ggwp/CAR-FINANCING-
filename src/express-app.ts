@@ -70,6 +70,11 @@ function lazyInit() {
   }
 }
 
+// Diagnostic: return what URL Express sees
+app.get("/api/express-info", (_req: any, res: any) => {
+  res.json({ url: _req.url, originalUrl: _req.originalUrl, baseUrl: _req.baseUrl, method: _req.method });
+});
+
 // Middleware to ensure lazy init runs before any route handler
 app.use((_req: any, _res: any, next: any) => {
   lazyInit();
