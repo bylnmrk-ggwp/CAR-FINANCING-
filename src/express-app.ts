@@ -616,4 +616,13 @@ Would you like me to construct a custom amortization schedule for a specific veh
   }
 });
 
+// Global error handling middleware
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({
+    error: "Internal server error",
+    message: process.env.NODE_ENV !== "production" ? err.message : undefined
+  });
+});
+
 export default app;

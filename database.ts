@@ -6,7 +6,14 @@ import { getCache } from './src/cache';
 const dbPath = process.env.VERCEL
   ? path.join('/tmp', 'mcars-finance.db')
   : path.join(process.cwd(), 'mcars-finance.db');
-const db = new Database(dbPath);
+
+let db: Database.Database;
+try {
+  db = new Database(dbPath);
+} catch (err) {
+  console.error("Failed to initialize SQLite database:", err);
+  throw err;
+}
 
 const ALLOWED_APP_SORT = ['createdAt', 'statusUpdatedAt', 'applicantName', 'loanAmount', 'creditScore', 'status', 'carMake', 'carYear'];
 const ALLOWED_EMAIL_SORT = ['sentAt', 'subject', 'toEmail', 'read'];
