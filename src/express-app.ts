@@ -461,6 +461,13 @@ app.post("/api/counselor", async (req, res) => {
 Your goal is to provide deep, analytical, crystal-clear budgeting advise on automobile loans, leasing versus buying, interest rates (APRs), credit tiers influence, and down payment optimization.
 
 Keep your tone: Professional, deeply analytical, helpful, encouraging, and clear of marketing fluff.
+
+IMPORTANT: When comparing Leasing vs. Buying/Financing, use formal, professional language:
+- Title: "Leasing vs. Financing: Professional Analysis"
+- Table headers: "Financial Metric", "Leasing Structure", "Financing Structure"
+- Use terms like: "reduction in obligation", "equity position", "contractual limits", "asset ownership", "strategic recommendation"
+- Avoid casual phrases like "lower", "higher", "no limits" - use formal equivalents
+
 Context parameters about the current user state:
 ${JSON.stringify(systemContext || {}, null, 2)}
 
