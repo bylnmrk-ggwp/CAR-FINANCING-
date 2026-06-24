@@ -1,26 +1,23 @@
-import type DatabaseModule from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import path from 'path';
-import { createRequire } from 'module';
 import { LoanApplication, SimulatedEmail, ApplicationFilters, PaginatedResponse, User, Tenant } from './src/types';
 import { getCache } from './src/cache';
-
-type Database = DatabaseModule.Database;
 
 const dbPath = process.env.VERCEL
   ? path.join('/tmp', 'mcars-finance.db')
   : path.join(process.cwd(), 'mcars-finance.db');
 
-let realDb: Database;
+let realDb: Database.Database;
 let initError: Error | null = null;
 
-function getDatabase(): Database {
+function getDatabase(): Database.Database {
   if (initError) throw initError;
   if (!realDb) throw new Error("Database not initialized");
   return realDb;
 }
 
-function createDbProxy(): Database {
-  return new Proxy({} as Database, {
+function createDbProxy(): Database.Database {
+  return new Proxy({} as Database.Database, {
     get(_, prop: string) {
       const d = getDatabase();
       const val = (d as any)[prop];
@@ -29,10 +26,8 @@ function createDbProxy(): Database {
   });
 }
 
-const _require = createRequire(import.meta.url);
 try {
-  const BetterSqlite3: typeof DatabaseModule = _require('better-sqlite3');
-  realDb = new BetterSqlite3(dbPath);
+  realDb = new Database(dbPath);
   realDb.pragma('foreign_keys = ON');
 } catch (err: any) {
   console.error("Failed to initialize SQLite database:", err);
