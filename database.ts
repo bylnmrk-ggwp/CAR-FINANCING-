@@ -10,17 +10,11 @@ const dbPath = process.env.VERCEL
 let _db: Database.Database | null = null;
 
 function getDb(): Database.Database {
-  if (_db) {
-    try {
-      _db.prepare("SELECT 1").get();
-      return _db;
-    } catch {
-      _db = null;
-    }
+  if (!_db) {
+    _db = new Database(dbPath);
+    _db.pragma('foreign_keys = ON');
+    runSchemaInit();
   }
-  _db = new Database(dbPath);
-  _db.pragma('foreign_keys = ON');
-  runSchemaInit();
   return _db;
 }
 
