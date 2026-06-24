@@ -274,7 +274,11 @@ export function createHistoryItem(data: any): void {
 export function getEmails(): SimulatedEmail[] {
   const rows = db.prepare('SELECT * FROM emails ORDER BY sentAt DESC').all() as any[];
   return rows.map(row => ({
-    ...row,
+    id: row.id,
+    to: row.toEmail,
+    subject: row.subject,
+    body: row.body,
+    sentAt: row.sentAt,
     read: row.read === 1
   }));
 }

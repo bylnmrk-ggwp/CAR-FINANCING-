@@ -18,7 +18,7 @@ export default function App() {
   
   // Simulated email inbox visibility
   const [emailInboxOpen, setEmailInboxOpen] = useState<boolean>(false);
-  const [emailCount, setEmailCount] = useState<number>(1);
+  const [emailCount, setEmailCount] = useState<number>(0);
 
   // Mobile navigation visibility
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
